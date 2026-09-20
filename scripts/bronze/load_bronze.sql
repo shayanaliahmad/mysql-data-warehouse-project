@@ -42,7 +42,7 @@ SELECT TIMESTAMPDIFF(SECOND, @start_time, @end_time) AS crm_sales_details_time;
 -- ERP tables
 SET @start_time = NOW(0);
 TRUNCATE TABLE bronze.erp_loc_a101;
-LOAD DATA LOCAL INFILE '/path/to/sql-data-warehouse-project/datasets/source_erp/loc_a101.csv'
+LOAD DATA LOCAL INFILE '/path/to/sql-data-warehouse-project/datasets/source_erp/LOC_A101.csv'
 INTO TABLE bronze.erp_loc_a101
 FIELDS TERMINATED BY ','
 LINES TERMINATED BY '\n'
@@ -52,7 +52,7 @@ SELECT TIMESTAMPDIFF(SECOND, @start_time, @end_time) AS erp_loc_a101_time;
 
 SET @start_time = NOW(0);
 TRUNCATE TABLE bronze.erp_cust_az12;
-LOAD DATA LOCAL INFILE '/path/to/sql-data-warehouse-project/datasets/source_erp/cust_az12.csv'
+LOAD DATA LOCAL INFILE '/path/to/sql-data-warehouse-project/datasets/source_erp/CUST_AZ12.csv'
 INTO TABLE bronze.erp_cust_az12
 FIELDS TERMINATED BY ','
 LINES TERMINATED BY '\n'
@@ -62,7 +62,7 @@ SELECT TIMESTAMPDIFF(SECOND, @start_time, @end_time) AS erp_cust_az12_time;
 
 SET @start_time = NOW(0);
 TRUNCATE TABLE bronze.erp_px_cat_g1v2;
-LOAD DATA LOCAL INFILE '/path/to/sql-data-warehouse-project/datasets/source_erp/px_cat_g1v2.csv'
+LOAD DATA LOCAL INFILE '/path/to/sql-data-warehouse-project/datasets/source_erp/PX_CAT_G1V2.csv'
 INTO TABLE bronze.erp_px_cat_g1v2
 FIELDS TERMINATED BY ','
 LINES TERMINATED BY '\n'
