@@ -134,17 +134,29 @@ BEGIN
             ELSE STR_TO_DATE(CAST(sls_due_dt AS CHAR), '%Y%m%d')
         END AS sls_due_dt,
         CASE
-            WHEN sls_sales IS NULL OR sls_sales <= 0 OR sls_sales != sls_quantity * ABS(sls_price)
-                THEN sls_quantity * ABS(sls_price)
+            WHEN sls_sales IS NULL OR sls_sales <= 0 OR sls_sales != sls_quantity * clean_price
+                THEN sls_quantity * clean_price
             ELSE sls_sales
-        END AS sls_sales, -- recalculate sales if the original value is missing or incorrect
+        END AS sls_sales, -- recalculate sales using the cleaned price, not the raw bronze price
         sls_quantity,
-        CASE
-            WHEN sls_price IS NULL OR sls_price <= 0
-                THEN sls_sales / NULLIF(sls_quantity, 0)
-            ELSE sls_price -- derive price if the original value is invalid
-        END AS sls_price
-    FROM bronze.crm_sales_details;
+        clean_price AS sls_price
+    FROM (
+        SELECT
+            sls_ord_num,
+            sls_prd_key,
+            sls_cust_id,
+            sls_order_dt,
+            sls_ship_dt,
+            sls_due_dt,
+            sls_sales,
+            sls_quantity,
+            CASE
+                WHEN sls_price IS NULL OR sls_price <= 0
+                    THEN sls_sales / NULLIF(sls_quantity, 0)
+                ELSE sls_price -- derive price if the original value is invalid
+            END AS clean_price
+        FROM bronze.crm_sales_details
+    ) t;
     SET v_end_time = NOW();
     SELECT 'crm_sales_details' AS table_name, TIMESTAMPDIFF(SECOND, v_start_time, v_end_time) AS load_duration_seconds;
 
@@ -168,10 +180,10 @@ BEGIN
             ELSE bdate
         END AS bdate, -- set future birthdates to NULL
         CASE
-            WHEN UPPER(TRIM(gen)) IN ('F', 'FEMALE') THEN 'Female'
-            WHEN UPPER(TRIM(gen)) IN ('M', 'MALE') THEN 'Male'
+            WHEN UPPER(TRIM(TRAILING '\r' FROM gen)) IN ('F', 'FEMALE') THEN 'Female'
+            WHEN UPPER(TRIM(TRAILING '\r' FROM gen)) IN ('M', 'MALE') THEN 'Male'
             ELSE 'n/a'
-        END AS gen -- normalize gender values and handle unknown cases
+        END AS gen -- normalize gender values, strip trailing \r from CRLF source file, and handle unknown cases
     FROM bronze.erp_cust_az12;
     SET v_end_time = NOW();
     SELECT 'erp_cust_az12' AS table_name, TIMESTAMPDIFF(SECOND, v_start_time, v_end_time) AS load_duration_seconds;
@@ -186,11 +198,11 @@ BEGIN
     SELECT
         REPLACE(cid, '-', '') AS cid,
         CASE
-            WHEN TRIM(cntry) = 'DE' THEN 'Germany'
-            WHEN TRIM(cntry) IN ('US', 'USA') THEN 'United States'
-            WHEN TRIM(cntry) = '' OR cntry IS NULL THEN 'n/a'
-            ELSE TRIM(cntry)
-        END AS cntry -- normalize and handle missing or blank country codes
+            WHEN TRIM(TRAILING '\r' FROM TRIM(cntry)) = 'DE' THEN 'Germany'
+            WHEN TRIM(TRAILING '\r' FROM TRIM(cntry)) IN ('US', 'USA') THEN 'United States'
+            WHEN TRIM(TRAILING '\r' FROM TRIM(cntry)) = '' OR cntry IS NULL THEN 'n/a'
+            ELSE TRIM(TRAILING '\r' FROM TRIM(cntry))
+        END AS cntry -- normalize and handle missing/blank country codes, strip trailing \r from CRLF source file
     FROM bronze.erp_loc_a101;
     SET v_end_time = NOW();
     SELECT 'erp_loc_a101' AS table_name, TIMESTAMPDIFF(SECOND, v_start_time, v_end_time) AS load_duration_seconds;
@@ -208,13 +220,13 @@ BEGIN
         id,
         cat,
         subcat,
-        maintenance
+        TRIM(TRAILING '\r' FROM maintenance) AS maintenance -- strip trailing \r from CRLF source file
     FROM bronze.erp_px_cat_g1v2;
     SET v_end_time = NOW();
     SELECT 'erp_px_cat_g1v2' AS table_name, TIMESTAMPDIFF(SECOND, v_start_time, v_end_time) AS load_duration_seconds;
 
     SET v_batch_end_time = NOW();
-    SELECT 'TOTAL' AS table_name, TIMESTAMPDIFF(SECOND, v_batch_start_time, v_batch_end_time) AS load_duration_seconds;
+    SELECT 'silver_total_time' AS table_name, TIMESTAMPDIFF(SECOND, v_batch_start_time, v_batch_end_time) AS load_duration_seconds;
 
 END //
 
