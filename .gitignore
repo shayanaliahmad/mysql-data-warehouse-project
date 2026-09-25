@@ -1,0 +1,6 @@
+# macOS/Windows system files
+.DS_Store
+Thumbs.db
+
+# local script copies with real file paths (not meant to be committed)
+*.local.sql
